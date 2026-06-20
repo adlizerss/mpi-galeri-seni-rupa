@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Art Gallery - Simulasi Pameran Seni Rupa</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons for Beautiful UI -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                    },
+                    colors: {
+                        gallery: {
+                            950: '#070a13',
+                            900: '#0f1424',
+                            800: '#1e2538',
+                            primary: '#d4af37', /* Premium Metallic Gold */
+                            accent: '#8b5cf6',  /* Violet Accent */
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for premium feel */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #070a13;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e2538;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4af37;
+        }
+        /* Glowing effects */
+        .glow-gold {
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+        }
+        .glow-active {
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.35);
+        }
+
+        /* HYBRID FULLSCREEN FALLBACK (Guarantees working inside all sandboxed previews) */
+        .fullscreen-active {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            z-index: 9999 !important;
+            border-radius: 0px !important;
+            background-color: #070a13 !important;
+        }
+        .fullscreen-active #iframe-wrapper {
+            height: calc(100vh - 100px) !important;
+        }
+    </style>
+</head>
+<body class="bg-gallery-950 text-slate-100 font-sans min-h-screen flex flex-col overflow-x-hidden selection:bg-gallery-primary selection:text-gallery-950">
+
+    <!-- FULLSCREEN WELCOME SCREEN (Premium Split Grid Layout - No Negative Space) -->
+    <div id="welcome-screen" class="fixed inset-0 z-50 bg-gradient-to-br from-gallery-950 via-slate-950 to-gallery-950 flex flex-col items-center justify-center p-4 sm:p-8 transition-all duration-700 ease-in-out overflow-y-auto">
+        <!-- Top Bar inside Welcome Screen -->
+        <div class="absolute top-6 right-6 flex items-center gap-3">
+            <button onclick="toggleHelpModal(true)" class="w-11 h-11 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center justify-center transition shadow-lg text-slate-300 hover:text-white" title="Petunjuk Penggunaan">
+                <i class="fa-solid fa-circle-question text-lg"></i>
+            </button>
+            <button onclick="openDevModal()" class="w-11 h-11 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center justify-center transition shadow-lg text-gallery-primary hover:scale-105" title="Profil Kurator/Pengembang">
+                <i class="fa-solid fa-star text-lg"></i>
+            </button>
+        </div>
+
+        <div class="relative max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center z-10 px-4">
+            <!-- Decorative background glows -->
+            <div class="absolute w-[500px] h-[500px] bg-gallery-primary/5 rounded-full blur-[100px] -top-60 -left-60 pointer-events-none"></div>
+            <div class="absolute w-[500px] h-[500px] bg-violet-600/5 rounded-full blur-[100px] -bottom-60 -right-60 pointer-events-none"></div>
+
+            <!-- Left Side: Title & Curriculum Info (7 Columns) -->
+            <div class="lg:col-span-7 flex flex-col gap-5 text-left">
+                <!-- Ribbon/Pita Welcome -->
+                <div class="self-start">
+                    <span class="px-5 py-2 rounded-full text-xs font-bold bg-slate-900/90 border border-slate-800 text-gallery-primary tracking-widest uppercase shadow-md backdrop-blur-sm">
+                        Fase E • Kelas X SMA
+                    </span>
+                </div>
+
+                <!-- Main Title with golden gradient -->
+                <h1 class="font-serif text-4xl sm:text-6xl font-black text-white tracking-wide leading-tight drop-shadow-2xl">
+                    GALERI VIRTUAL<br>
+                    <span class="bg-gradient-to-r from-gallery-primary via-amber-300 to-gallery-primary bg-clip-text text-transparent font-sans font-light">SENI RUPA</span>
+                </h1>
+
+                <!-- Divider -->
+                <div class="w-32 h-[3px] bg-gradient-to-r from-transparent via-gallery-primary to-transparent my-1"></div>
+
+                <!-- Subtitle -->
+                <p class="text-sm sm:text-lg text-slate-300 leading-relaxed font-light font-sans max-w-xl">
+                    Jelajahi pameran interaktif 3D secara imersif. Dirancang sebagai sarana apresiasi seni rupa aktif dan kritis bagi siswa dan penikmat seni.
+                </p>
+
+                <!-- Start Button -->
+                <div class="mt-4">
+                    <button onclick="startGallery()" class="group relative flex items-center justify-center gap-4 px-12 py-5 bg-gradient-to-r from-gallery-primary via-amber-400 to-gallery-primary text-gallery-950 font-extrabold text-base rounded-2xl shadow-2xl shadow-gallery-primary/30 border border-amber-300/50 hover:shadow-gallery-primary/50 hover:scale-[1.04] active:scale-[0.96] transition-all duration-300 overflow-hidden cursor-pointer">
+                        <!-- Shine effect -->
+                        <span class="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/30 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></span>
+                        <i class="fa-solid fa-play text-base transition-transform duration-300 group-hover:translate-x-1"></i>
+                        <span class="tracking-widest uppercase">Mulai Jelajah Galeri</span>
+                    </button>
+                </div>
+
+                <!-- Curator Badge -->
+                <div class="text-xs text-slate-500 font-medium mt-6 border-t border-slate-900 pt-4">
+                    Kurator Seni: <span class="text-slate-300">Muhammad Adli Abdurrahim, S.Pd.</span> &bull; SMAN 19 Bandung
+                </div>
+            </div>
+
+            <!-- Right Side: Exhibition Highlights Card (5 Columns) -->
+            <div class="lg:col-span-5 w-full">
+                <div class="bg-slate-900/60 backdrop-blur-md border border-slate-800/80 rounded-3xl p-6 shadow-2xl glow-gold transition-all duration-300 hover:border-gallery-primary/30 flex flex-col gap-6">
+                    
+                    <!-- Title inside Card -->
+                    <div>
+                        <h2 class="text-xs font-bold text-gallery-primary uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-nodes"></i> Fitur Eksplorasi Virtual
+                        </h2>
+                        <p class="text-[11px] text-slate-400">Teknologi pembelajaran interaktif yang terintegrasi di dalam galeri:</p>
+                    </div>
+
+                    <!-- Highlight Features -->
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-8 h-8 rounded-lg bg-slate-950 flex items-center justify-center border border-slate-800 text-gallery-primary shrink-0"><i class="fa-solid fa-cube text-sm"></i></div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">1. Ruang 3D Interaktif</h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5 leading-relaxed font-light">Navigasi kamera 360 derajat menggunakan kontrol mouse dan sentuhan langsung ke karya.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-8 h-8 rounded-lg bg-slate-950 flex items-center justify-center border border-slate-800 text-gallery-primary shrink-0"><i class="fa-solid fa-volume-high text-sm"></i></div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">2. Audio Guide Deskripsi</h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5 leading-relaxed font-light">Fitur panduan berbasis suara (TTS) yang membacakan ulasan kurasi seni secara dinamis.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-8 h-8 rounded-lg bg-slate-950 flex items-center justify-center border border-slate-800 text-gallery-primary shrink-0"><i class="fa-solid fa-music text-sm"></i></div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">3. Musik Ambient Pameran</h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5 leading-relaxed font-light">Musik latar relaksasi yang disintesis secara prosedural untuk sensasi pameran nyata.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Mockup inside card (Fills negative space) -->
+                    <div class="relative bg-slate-950 border border-slate-850 rounded-2xl h-24 overflow-hidden flex items-center justify-center gap-3 px-4">
+                        <div class="absolute inset-0 bg-gradient-to-r from-gallery-primary/5 via-violet-600/5 to-gallery-primary/5 pointer-events-none"></div>
+                        <i class="fa-solid fa-vr-cardboard text-3xl text-gallery-primary/30 animate-pulse"></i>
+                        <div class="text-left">
+                            <span class="block text-[9px] text-slate-500 uppercase tracking-widest font-black">VR / 3D Space</span>
+                            <span class="text-xs text-slate-300 font-light">Interactive Experience Powered by Assemblr</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFIKASI KUSTOM -->
+    <div id="custom-toast" class="fixed top-5 right-5 z-50 transform translate-x-80 opacity-0 transition-all duration-300 ease-out bg-slate-900 border border-gallery-primary text-slate-100 px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+        <i id="toast-icon" class="fa-solid fa-circle-info text-gallery-primary"></i>
+        <span id="toast-message" class="text-sm font-medium">Notifikasi</span>
+    </div>
+
+    <!-- HEADER UTAMA -->
+    <header class="border-b border-slate-800/60 bg-gallery-900/90 backdrop-blur-md sticky top-0 z-40 transition-all">
+        <div class="w-full max-w-none px-6 h-20 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-gallery-primary to-violet-600 flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-palette text-gallery-950 text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-serif text-xl sm:text-2xl font-bold tracking-wide text-white">
+                        VIRTUAL<span class="text-gallery-primary font-sans font-light">ART</span>
+                    </h1>
+                    <p class="text-[10px] text-slate-400 tracking-widest uppercase">Simulasi Galeri Seni Rupa 3D</p>
+                </div>
+            </div>
+
+            <!-- Header Controls -->
+            <div class="flex items-center gap-3">
+                <!-- Ambient BGM Toggle -->
+                <button id="btn-ambient" onclick="toggleAmbientMusic()" class="flex items-center gap-2 bg-slate-900/80 hover:bg-slate-800 text-xs sm:text-sm text-slate-300 hover:text-white px-3 sm:px-4 py-2 rounded-xl transition border border-slate-800 cursor-pointer" title="Mulai musik latar ambient relaksasi">
+                    <i id="ambient-icon" class="fa-solid fa-music text-slate-400"></i>
+                    <span class="hidden md:inline" id="ambient-text">Musik Latar</span>
+                </button>
+
+                <!-- Help Modal Trigger -->
+                <button onclick="toggleHelpModal(true)" class="w-10 h-10 bg-slate-900/80 hover:bg-slate-800 rounded-xl flex items-center justify-center transition border border-slate-800 cursor-pointer" title="Petunjuk Penggunaan">
+                    <i class="fa-solid fa-circle-question text-slate-300"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENT LAYOUT (Edge-to-Edge Desktop Cockpit Layout) -->
+    <main class="flex-1 w-full max-w-none px-6 py-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch h-[calc(100vh-115px)] min-h-[500px]">
+        
+        <!-- AREA UTAMA: 3D ASSEMBLR VIEWER (9 Columns - Stretches to fill screen height) -->
+        <section class="lg:col-span-9 flex flex-col h-full order-1">
+            <!-- Viewer Frame Container -->
+            <div id="viewer-container" class="relative bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden flex flex-col flex-1 h-full shadow-2xl transition-all duration-200">
+                
+                <!-- Header Penampil -->
+                <div class="bg-slate-950/95 backdrop-blur px-4 py-3.5 border-b border-slate-800/80 flex items-center justify-between z-20">
+                    <div class="flex items-center gap-3">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+                        <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">Ruang Galeri Utama Virtual</span>
+                    </div>
+                    <!-- Control buttons inside viewer -->
+                    <div class="flex items-center gap-2">
+                        <button onclick="reloadViewer()" class="p-2 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer" title="Muat Ulang Simulator">
+                            <i class="fa-solid fa-arrows-rotate text-xs"></i>
+                        </button>
+                        <button id="btn-fullscreen" onclick="toggleFullscreen()" class="p-2 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer" title="Mode Layar Penuh">
+                            <i class="fa-solid fa-expand text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Iframe Container / Loading Skeleton -->
+                <div id="iframe-wrapper" class="relative flex-1 bg-slate-950 transition-all duration-200 h-full">
+                    <div id="viewer-loader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 z-10 transition-opacity duration-350">
+                        <div class="relative flex items-center justify-center mb-4">
+                            <div class="w-16 h-16 rounded-full border-4 border-slate-900 border-t-gallery-primary animate-spin"></div>
+                            <i class="fa-solid fa-palette text-gallery-primary absolute text-xl animate-bounce"></i>
+                        </div>
+                        <p class="text-sm font-medium text-slate-300">Menata Ruang Galeri Virtual...</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Mengintegrasikan dengan Assemblr Edu</p>
+                    </div>
+
+                    <!-- THE ASSEMBLR IFRAME -->
+                    <iframe 
+                        id="assemblr-iframe"
+                        src="" 
+                        class="w-full h-full border-0" 
+                        allow="camera; microphone; gyroscope; accelerometer; magnetometer; xr-spatial-tracking; fullscreen" 
+                        allowfullscreen
+                        onload="hideLoader()">
+                    </iframe>
+                </div>
+
+                <!-- Footer Navigasi Petunjuk -->
+                <div class="bg-slate-950/90 px-4 py-3 border-t border-slate-800/80 flex flex-wrap gap-4 items-center justify-between text-xs text-slate-400 z-20">
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-computer-mouse text-gallery-primary"></i> Geser mouse untuk melihat sekeliling</span>
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-magnifying-glass text-gallery-primary"></i> Zoom in/out dengan scroll</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- SIDEBAR KANAN: DETAIL KARYA & PANEL AKSI (3 Columns - Aligned Height) -->
+        <section class="lg:col-span-3 flex flex-col h-full order-2 animate-fade-in">
+            <div class="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between h-full min-h-[480px] lg:min-h-0">
+                <!-- Top Section: Details & Kurasi -->
+                <div class="flex flex-col gap-4">
+                    <div class="border-b border-slate-800 pb-3">
+                        <span id="detail-category" class="text-[9px] bg-violet-950/60 text-violet-300 font-semibold px-2.5 py-1 rounded-full border border-violet-900/60 tracking-wider uppercase">Kategori</span>
+                        <h3 id="detail-title" class="font-serif text-xl font-bold text-white mt-2 leading-snug">Nama Ruang Galeri</h3>
+                        <p id="detail-artist" class="text-xs text-gallery-primary font-semibold mt-1">oleh Kurator Seni</p>
+                    </div>
+
+                    <div class="flex flex-col gap-3">
+                        <!-- Scrollable description inside dark viewport card -->
+                        <div class="text-xs text-slate-350 leading-relaxed bg-slate-950/65 p-3.5 rounded-xl border border-slate-850/80 max-h-[220px] overflow-y-auto font-light" id="detail-description">
+                            Deskripsi lengkap pameran virtual.
+                        </div>
+                        
+                        <!-- Metadata Grid -->
+                        <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-400">
+                            <div class="bg-slate-950/40 p-2.5 rounded-lg border border-slate-850/60">
+                                <span class="block text-[8px] text-slate-500 uppercase tracking-wider">Metode</span>
+                                <span id="detail-medium" class="font-medium text-slate-300">Interactive 3D</span>
+                            </div>
+                            <div class="bg-slate-950/40 p-2.5 rounded-lg border border-slate-850/60">
+                                <span class="block text-[8px] text-slate-500 uppercase tracking-wider">Platform</span>
+                                <span class="font-medium text-slate-300 flex items-center gap-1"><i class="fa-solid fa-cube text-cyan-400"></i> Assemblr</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Section: Visitor Actions & Institutional Badge -->
+                <div class="flex flex-col gap-2.5 mt-5">
+                    <!-- TTS Audio Guide Button -->
+                    <button id="btn-audio-guide" onclick="speakDescription()" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-750 transition cursor-pointer">
+                        <i class="fa-solid fa-volume-high text-gallery-primary"></i>
+                        <span>Dengarkan Deskripsi</span>
+                    </button>
+
+                    <!-- Share Embed Button -->
+                    <button onclick="copyEmbedLink()" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold border border-slate-800 transition cursor-pointer">
+                        <i class="fa-solid fa-share-nodes text-gallery-primary"></i>
+                        <span>Salin Link Embed</span>
+                    </button>
+                    
+                    <!-- Institutional Affiliation Badge -->
+                    <div class="text-[9px] text-slate-500 text-center mt-2 border-t border-slate-800/50 pt-2.5 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-school text-slate-600"></i> SMAN 19 Bandung &bull; Kelas X
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-900 bg-slate-950 py-4 mt-2">
+        <div class="w-full max-w-none px-6 text-center text-xs text-slate-500 flex flex-wrap justify-between items-center gap-4">
+            <p>&copy; 2026 ArtSpace Virtual Gallery. Powered by <strong>Assemblr Edu Embeds</strong>.</p>
+            <p class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Virtual Server Online</p>
+        </div>
+    </footer>
+
+    <!-- HELP MODAL -->
+    <div id="help-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl relative transform scale-95 transition-transform duration-300">
+            <button onclick="toggleHelpModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 hover:bg-slate-800 rounded-full transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-gallery-primary/10 flex items-center justify-center border border-gallery-primary/30">
+                    <i class="fa-solid fa-circle-question text-gallery-primary text-lg"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">Petunjuk Eksplorasi</h3>
+            </div>
+            <div class="space-y-3.5 text-xs text-slate-300 leading-relaxed">
+                <div class="flex items-start gap-3">
+                    <div class="bg-slate-800 text-gallery-primary p-1 rounded-lg shrink-0 mt-0.5"><i class="fa-solid fa-cube w-4 h-4 flex items-center justify-center"></i></div>
+                    <p><strong>Navigasi 3D</strong>: Klik kiri dan seret di area tengah untuk mengitari model. Klik kanan dan seret untuk memindahkan kamera.</p>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="bg-slate-800 text-gallery-primary p-1 rounded-lg shrink-0 mt-0.5"><i class="fa-solid fa-music w-4 h-4 flex items-center justify-center"></i></div>
+                    <p><strong>Relaksasi Galeri</strong>: Hidupkan musik latar ambient di menu atas untuk sensasi musik pameran sesungguhnya.</p>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="bg-slate-800 text-gallery-primary p-1 rounded-lg shrink-0 mt-0.5"><i class="fa-solid fa-expand w-4 h-4 flex items-center justify-center"></i></div>
+                    <p><strong>Layar Penuh</strong>: Gunakan tombol layar penuh (<i class="fa-solid fa-expand"></i>) di pojok penampil untuk visualisasi yang lebih imersif dan detail.</p>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="bg-slate-800 text-gallery-primary p-1 rounded-lg shrink-0 mt-0.5"><i class="fa-solid fa-circle-info w-4 h-4 flex items-center justify-center"></i></div>
+                    <p><strong>Deskripsi Karya</strong>: Jika ingin melihat deskripsi karya maka klik karyanya, dan jika ingin kembali atau menutup deskripsi karya klik lagi karyanya.</p>
+                </div>
+            </div>
+
+            <button onclick="toggleHelpModal(false)" class="w-full mt-6 bg-gallery-primary hover:bg-gallery-primary/90 text-gallery-950 font-bold py-2.5 rounded-xl transition text-xs">
+                Mulai Masuk Galeri
+            </button>
+        </div>
+    </div>
+
+    <!-- DEVELOPER PROFILE MODAL -->
+    <div id="dev-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-xl w-full shadow-2xl relative transform scale-95 transition-transform duration-300">
+            <button onclick="toggleDevModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 hover:bg-slate-800 rounded-full transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-gallery-primary/10 flex items-center justify-center border border-gallery-primary/30">
+                    <i class="fa-solid fa-star text-gallery-primary text-lg"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">Profil Kurator & Pengembang</h3>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-6 items-center bg-slate-950/60 p-5 rounded-2xl border border-slate-800/80">
+                <div class="flex-shrink-0 flex flex-col items-center gap-3">
+                    <div class="relative">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='200' viewBox='0 0 160 200'%3E%3Ccircle cx='80' cy='66.6' r='40' fill='%23FFB703'/%3E%3Cpath d='M 26.6 200 Q 80 100 133.3 200' fill='%230F172A'/%3E%3C/svg%3E" id="cfg-foto" class="w-32 h-40 object-cover rounded-xl border border-slate-800 shadow-md" alt="Foto Profil">
+                        <span class="absolute -bottom-2 -right-2 bg-gallery-primary text-gallery-950 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow">Kurator</span>
+                    </div>
+                </div>
+                <div class="flex-1 text-center sm:text-left">
+                    <h4 class="text-base font-bold text-white tracking-wide">Muhammad Adli Abdurrahim, S.Pd.</h4>
+                    <p class="text-[10px] text-gallery-primary font-bold tracking-wider uppercase mt-1">Guru Seni Budaya &bull; SMAN 19 Bandung</p>
+                    <div class="w-16 h-[2px] bg-gallery-primary/30 my-3 mx-auto sm:mx-0"></div>
+                    <p class="text-xs text-slate-400 leading-relaxed font-light">
+                        Mendedikasikan diri untuk merintis digitalisasi pembelajaran seni rupa tingkat SMA. Galeri virtual ini dikembangkan sebagai purwarupa media pembelajaran berbasis realitas 3D agar siswa dapat melakukan apresiasi karya seni rupa kapan saja tanpa kendala jarak dan waktu.
+                    </p>
+                </div>
+            </div>
+            
+            <button onclick="toggleDevModal(false)" class="w-full mt-6 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-xl transition text-xs border border-slate-750">
+                Tutup Profil
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // SINGLE ARTWORK DATA
+        const artworkData = {
+            id: "ruang-pameran-1",
+            title: "Simulasi Ruang Pameran Utama",
+            artist: "Kurator Seni Virtual",
+            category: "Instalasi Galeri",
+            medium: "Virtual Exhibition Room",
+            assemblrUrl: "https://viewer.assemblrworld.com/Embed/-dRUHyngK7ujJTTJve8j",
+            description: "Ini adalah representasi pameran seni rupa 3D interaktif utama. Ruang pameran dirancang dengan perspektif modern untuk menampilkan karya-karya seni dalam format digital interaktif, memudahkan siswa atau pengunjung untuk mengapresiasi keindahan bentuk seni rupa dari berbagai sisi secara langsung."
+        };
+
+        // Web Audio API Ambient Music Synthesizer (Calm & Procedural)
+        const ambientBgm = {
+            ctx: null,
+            isPlaying: false,
+            chordInterval: null,
+            melodyTimeout: null,
+            masterGain: null,
+            delayNode: null,
+            filterNode: null,
+
+            init() {
+                if (this.ctx) return;
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContextClass();
+            },
+
+            async play() {
+                this.init();
+                if (this.ctx.state === 'suspended') {
+                    await this.ctx.resume();
+                }
+                if (this.isPlaying) return;
+                this.isPlaying = true;
+
+                // Create Nodes
+                this.masterGain = this.ctx.createGain();
+                this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
+                this.masterGain.gain.linearRampToValueAtTime(bgmAudio.volume, this.ctx.currentTime + 3.0); // Fade-in to current volume settings
+
+                this.filterNode = this.ctx.createBiquadFilter();
+                this.filterNode.type = 'lowpass';
+                this.filterNode.frequency.setValueAtTime(800, this.ctx.currentTime);
+
+                this.delayNode = this.ctx.createDelay(2.0);
+                this.delayNode.delayTime.setValueAtTime(0.75, this.ctx.currentTime);
+                this.delayFeedback = this.ctx.createGain();
+                this.delayFeedback.gain.setValueAtTime(0.5, this.ctx.currentTime);
+
+                this.delayNode.connect(this.delayFeedback);
+                this.delayFeedback.connect(this.delayNode);
+
+                this.delayNode.connect(this.filterNode);
+                this.filterNode.connect(this.masterGain);
+                this.masterGain.connect(this.ctx.destination);
+
+                this.triggerChord();
+                this.chordInterval = setInterval(() => this.triggerChord(), 10000);
+
+                this.triggerMelody();
+            },
+
+            triggerChord() {
+                if (!this.isPlaying || !this.ctx) return;
+                const chords = [
+                    [57, 60, 64, 67], // Am7
+                    [53, 57, 60, 64], // Fmaj7
+                    [55, 59, 62, 65], // G7
+                    [48, 52, 55, 59]  // Cmaj7
+                ];
+                const chord = chords[Math.floor(Math.random() * chords.length)];
+                chord.forEach(note => {
+                    const freq = Math.pow(2, (note - 69) / 12) * 440;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+                    gain.gain.setValueAtTime(0, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.12, this.ctx.currentTime + 4.0);
+                    gain.gain.setValueAtTime(0.12, this.ctx.currentTime + 6.0);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 10.0);
+
+                    osc.connect(gain);
+                    gain.connect(this.filterNode);
+                    gain.connect(this.delayNode);
+
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 10.0);
+                });
+            },
+
+            triggerMelody() {
+                if (!this.isPlaying || !this.ctx) return;
+                const scale = [60, 62, 64, 67, 69, 72, 74, 76];
+                const note = scale[Math.floor(Math.random() * scale.length)];
+                const freq = Math.pow(2, (note - 69) / 12) * 440;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+                gain.gain.setValueAtTime(0, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.15, this.ctx.currentTime + 0.8);
+                gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 5.0);
+
+                osc.connect(gain);
+                gain.connect(this.filterNode);
+                gain.connect(this.delayNode);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 5.0);
+
+                const delayTime = 3000 + Math.random() * 4000;
+                this.melodyTimeout = setTimeout(() => this.triggerMelody(), delayTime);
+            },
+
+            pause() {
+                if (!this.isPlaying) return;
+                this.isPlaying = false;
+                clearInterval(this.chordInterval);
+                clearTimeout(this.melodyTimeout);
+                if (this.masterGain && this.ctx) {
+                    this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
+                    this.masterGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 1.5);
+                    setTimeout(() => {
+                        if (this.ctx && !this.isPlaying) {
+                            this.ctx.close();
+                            this.ctx = null;
+                        }
+                    }, 1600);
+                }
+            }
+        };
+
+        const bgmAudio = {
+            _volume: 0.25,
+            get volume() {
+                return this._volume;
+            },
+            set volume(vol) {
+                this._volume = vol;
+                if (ambientBgm.masterGain && ambientBgm.ctx) {
+                    ambientBgm.masterGain.gain.setValueAtTime(ambientBgm.masterGain.gain.value, ambientBgm.ctx.currentTime);
+                    ambientBgm.masterGain.gain.linearRampToValueAtTime(vol, ambientBgm.ctx.currentTime + 0.5);
+                }
+            },
+            pause() {
+                ambientBgm.pause();
+            },
+            play() {
+                return ambientBgm.play();
+            }
+        };
+
+        // Resume AudioContext on first user interaction to satisfy autoplay policies
+        window.addEventListener('click', () => {
+            if (ambientBgm.ctx && ambientBgm.ctx.state === 'suspended') {
+                ambientBgm.ctx.resume().catch(e => console.log("Error resuming audio:", e));
+            }
+        });
+
+        let isAmbientPlaying = false;
+        let speechSynth = window.speechSynthesis;
+        let speechUtterance = null;
+
+        // Flag untuk melacak apakah petunjuk penggunaan sudah pernah ditampilkan otomatis
+        let hasShownHelpOnLoad = false;
+
+        // Inisialisasi Aplikasi saat Load
+        window.onload = function() {
+            // Pindahkan modal-modal dan toast ke dalam viewer-container agar dapat tampil di atas layar penuh (fullscreen)
+            const container = document.getElementById("viewer-container");
+            const toast = document.getElementById("custom-toast");
+            const helpModal = document.getElementById("help-modal");
+            const devModal = document.getElementById("dev-modal");
+            if (container) {
+                if (toast) container.appendChild(toast);
+                if (helpModal) container.appendChild(helpModal);
+                if (devModal) container.appendChild(devModal);
+            }
+
+            loadArtwork();
+            
+            // Listen to browser native fullscreen changes to coordinate visual states
+            document.addEventListener('fullscreenchange', handleNativeFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleNativeFullscreenChange);
+        };
+
+        // Load detail dan info artwork tunggal (tanpa langsung memuat iframe)
+        function loadArtwork() {
+            stopSpeaking();
+
+            // Set detail info teks
+            document.getElementById("detail-title").innerText = artworkData.title;
+            document.getElementById("detail-artist").innerText = `oleh ${artworkData.artist}`;
+            document.getElementById("detail-category").innerText = artworkData.category;
+            document.getElementById("detail-medium").innerText = artworkData.medium;
+            document.getElementById("detail-description").innerText = artworkData.description;
+            
+            // Set title di landing page secara dinamis
+            const landingTitle = document.getElementById("landing-title");
+            if (landingTitle) landingTitle.innerText = artworkData.title;
+        }
+
+        // Fungsi untuk memulai galeri dari Welcome Screen
+        function startGallery() {
+            const welcomeScreen = document.getElementById("welcome-screen");
+            if (welcomeScreen) {
+                // Beri efek transisi memudar
+                welcomeScreen.classList.add("opacity-0", "pointer-events-none");
+                setTimeout(() => {
+                    welcomeScreen.style.display = "none";
+                }, 750);
+            }
+
+            // Tampilkan loader dan muat iframe Assemblr Edu
+            showLoader();
+            const iframe = document.getElementById("assemblr-iframe");
+            if (!iframe.src || iframe.src === "" || iframe.src === window.location.href) {
+                iframe.src = artworkData.assemblrUrl;
+            }
+
+            // Langsung aktifkan mode fullscreen
+            const container = document.getElementById("viewer-container");
+            if (container && !container.classList.contains("fullscreen-active")) {
+                toggleFullscreen();
+            }
+
+            // Mulai musik latar ambient secara otomatis
+            if (!isAmbientPlaying) {
+                toggleAmbientMusic();
+            }
+        }
+
+        // Loader Frame Helpers
+        function showLoader() {
+            document.getElementById("viewer-loader").style.opacity = "1";
+            document.getElementById("viewer-loader").style.pointerEvents = "all";
+        }
+
+        function hideLoader() {
+            document.getElementById("viewer-loader").style.opacity = "0";
+            document.getElementById("viewer-loader").style.pointerEvents = "none";
+            
+            // Otomatis tampilkan petunjuk eksplorasi (help modal) sesaat setelah 3D frame terisi
+            if (!hasShownHelpOnLoad) {
+                hasShownHelpOnLoad = true;
+                setTimeout(() => {
+                    toggleHelpModal(true);
+                }, 600);
+            }
+        }
+
+        function reloadViewer() {
+            showLoader();
+            const iframe = document.getElementById("assemblr-iframe");
+            const currentSrc = iframe.src;
+            iframe.src = "";
+            setTimeout(() => {
+                iframe.src = currentSrc;
+            }, 100);
+            showToast("Memuat ulang pameran virtual...", "fa-arrows-rotate");
+        }
+
+        // FIX FULLSCREEN: Gabungan antara HTML5 Fullscreen API dengan Fallback CSS kustom kelas ".fullscreen-active"
+        function toggleFullscreen() {
+            const container = document.getElementById("viewer-container");
+            const isCurrentlyFullscreen = container.classList.contains("fullscreen-active");
+            const btn = document.getElementById("btn-fullscreen");
+
+            if (!isCurrentlyFullscreen) {
+                // Terapkan mode fullscreen CSS Fallback (100% bekerja di semua sandbox iframe)
+                container.classList.add("fullscreen-active");
+                btn.innerHTML = '<i class="fa-solid fa-compress text-xs"></i>';
+                showToast("Mode layar penuh diaktifkan", "fa-expand");
+
+                // Coba picu HTML5 Fullscreen sistem (opsional jika didukung)
+                try {
+                    if (container.requestFullscreen) {
+                        container.requestFullscreen().catch(() => {});
+                    } else if (container.webkitRequestFullscreen) {
+                        container.webkitRequestFullscreen();
+                    }
+                } catch (err) {
+                    // Diabaikan jika diblokir oleh sandbox, fallback CSS kami tetap berfungsi sempurna!
+                }
+            } else {
+                // Keluar dari mode layar penuh
+                container.classList.remove("fullscreen-active");
+                btn.innerHTML = '<i class="fa-solid fa-expand text-xs"></i>';
+                showToast("Keluar dari layar penuh", "fa-compress");
+
+                try {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen().catch(() => {});
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
+                } catch (err) {
+                    // Diabaikan
+                }
+            }
+        }
+
+        // Sinkronisasi tombol jika user keluar fullscreen menggunakan tombol fisik 'Esc'
+        function handleNativeFullscreenChange() {
+            const container = document.getElementById("viewer-container");
+            const btn = document.getElementById("btn-fullscreen");
+            
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (container.classList.contains("fullscreen-active")) {
+                    container.classList.remove("fullscreen-active");
+                    btn.innerHTML = '<i class="fa-solid fa-expand text-xs"></i>';
+                }
+            }
+        }
+
+        // Support penutupan via tombol Esc keyboard untuk kenyamanan navigasi
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const container = document.getElementById("viewer-container");
+                if (container.classList.contains("fullscreen-active")) {
+                    container.classList.remove("fullscreen-active");
+                    document.getElementById("btn-fullscreen").innerHTML = '<i class="fa-solid fa-expand text-xs"></i>';
+                }
+            }
+        });
+
+        // Copy Link share
+        function copyEmbedLink() {
+            const embedText = `<iframe src="${artworkData.assemblrUrl}" allow="camera; microphone; gyroscope; accelerometer; magnetometer; xr-spatial-tracking; fullscreen" allowFullScreen/>`;
+            
+            const tempTextArea = document.createElement("textarea");
+            tempTextArea.value = embedText;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            showToast("Kode Iframe berhasil disalin!", "fa-circle-check");
+        }
+
+        // BGM Toggle Controller
+        function toggleAmbientMusic() {
+            if (isAmbientPlaying) {
+                bgmAudio.pause();
+                isAmbientPlaying = false;
+                document.getElementById("ambient-icon").className = "fa-solid fa-music text-slate-400";
+                document.getElementById("ambient-text").innerText = "Musik Latar";
+                showToast("Musik latar dimatikan", "fa-music");
+            } else {
+                bgmAudio.play().then(() => {
+                    isAmbientPlaying = true;
+                    document.getElementById("ambient-icon").className = "fa-solid fa-circle-play text-gallery-primary animate-spin";
+                    document.getElementById("ambient-text").innerText = "Musik Aktif";
+                    showToast("Memutar musik latar pameran...", "fa-music");
+                }).catch(err => {
+                    console.error("Autoplay blocked or failed:", err);
+                    showToast("Gagal memutar audio: Interaksi diperlukan", "fa-circle-exclamation");
+                });
+            }
+        }
+
+        // Web Speech API - TTS Panduan Deskripsi Karya
+        function speakDescription() {
+            if (speechSynth.speaking) {
+                stopSpeaking();
+                return;
+            }
+
+            speechUtterance = new SpeechSynthesisUtterance(artworkData.description);
+            speechUtterance.lang = "id-ID";
+            speechUtterance.rate = 0.95;
+
+            speechUtterance.onstart = () => {
+                document.getElementById("btn-audio-guide").className = "w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-violet-950 text-violet-300 text-xs font-semibold border border-violet-800 transition";
+                document.getElementById("btn-audio-guide").innerHTML = `<i class="fa-solid fa-pause text-violet-400 animate-pulse"></i> <span>Hentikan Audio</span>`;
+                showToast("Memulai pembacaan deskripsi...", "fa-volume-high");
+
+                // Pelankan volume BGM saat suara narator sedang berbunyi (Audio Ducking)
+                if (isAmbientPlaying && bgmAudio) {
+                    bgmAudio.volume = 0.05;
+                }
+            };
+
+            speechUtterance.onend = () => {
+                resetSpeechButton();
+            };
+
+            speechSynth.speak(speechUtterance);
+        }
+
+        // Stop TTS
+        function stopSpeaking() {
+            if (speechSynth && speechSynth.speaking) {
+                speechSynth.cancel();
+            }
+            resetSpeechButton();
+        }
+
+        function resetSpeechButton() {
+            const btn = document.getElementById("btn-audio-guide");
+            if (btn) {
+                btn.className = "w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-750 transition";
+                btn.innerHTML = `<i class="fa-solid fa-volume-high text-gallery-primary"></i> <span>Dengarkan Deskripsi</span>`;
+            }
+
+            // Kembalikan volume BGM ke tingkat normal (Audio Ducking selesai)
+            if (isAmbientPlaying && bgmAudio) {
+                bgmAudio.volume = 0.25;
+            }
+        }
+
+        // UI Toast Notifications
+        function showToast(message, iconName = "fa-circle-info") {
+            const toast = document.getElementById("custom-toast");
+            const icon = document.getElementById("toast-icon");
+            const msg = document.getElementById("toast-message");
+
+            icon.className = `fa-solid ${iconName} text-gallery-primary`;
+            msg.innerText = message;
+
+            toast.style.transform = "translateX(0)";
+            toast.style.opacity = "1";
+
+            setTimeout(() => {
+                toast.style.transform = "translateX(100%)";
+                toast.style.opacity = "0";
+            }, 3000);
+        }
+
+        // Modal Help Controls
+        function toggleHelpModal(show) {
+            const modal = document.getElementById("help-modal");
+            if (show) {
+                modal.classList.remove("hidden");
+                setTimeout(() => {
+                    modal.querySelector('.transform').classList.remove('scale-95');
+                    modal.querySelector('.transform').classList.add('scale-100');
+                }, 50);
+            } else {
+                modal.querySelector('.transform').classList.add('scale-95');
+                modal.querySelector('.transform').classList.remove('scale-100');
+                setTimeout(() => {
+                    modal.classList.add("hidden");
+                }, 200);
+            }
+        }
+
+        // Modal Dev Controls
+        function toggleDevModal(show) {
+            const modal = document.getElementById("dev-modal");
+            if (show) {
+                modal.classList.remove("hidden");
+                setTimeout(() => {
+                    modal.querySelector('.transform').classList.remove('scale-95');
+                    modal.querySelector('.transform').classList.add('scale-100');
+                }, 50);
+            } else {
+                modal.querySelector('.transform').classList.add('scale-95');
+                modal.querySelector('.transform').classList.remove('scale-100');
+                setTimeout(() => {
+                    modal.classList.add("hidden");
+                }, 200);
+            }
+        }
+
+        function openDevModal() {
+            toggleDevModal(true);
+        }
+    </script>
+</body>
+</html>
